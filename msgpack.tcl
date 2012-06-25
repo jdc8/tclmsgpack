@@ -6,14 +6,14 @@ namespace eval ::msgpack {
 critcl::license {Jos Decoster} {Apache License V2.0 / BSD}
 critcl::summary {Binary-based efficient object serialization library}
 critcl::description {
-    msgpack is a Tcl binding for the MessagePack library (http://msgpack.org/), 
+    msgpack is a Tcl binding for the MessagePack library (http://msgpack.org/),
     a binary-based efficient object serialization library.
 }
 critcl::subject MessagePack msgpack serialization
 
 critcl::meta origin https://github.com/jdc8/tclmsgpack
 
-critcl::userconfig define mode {choose mode of ZMQ to build and link against.} {static dynamic}
+critcl::userconfig define mode {choose mode of MsgPack to build and link against.} {static dynamic}
 
 if {[string match "win32*" [::critcl::targetplatform]]} {
 } else {
@@ -30,8 +30,8 @@ if {[string match "win32*" [::critcl::targetplatform]]} {
 
 
 # Get local build configuration
-if {[file exists "[file dirname [info script]]/zmq_config.tcl"]} {
-    set fd [open "[file dirname [info script]]/zmq_config.tcl"]
+if {[file exists "[file dirname [info script]]/msgpack_config.tcl"]} {
+    set fd [open "[file dirname [info script]]/msgpack_config.tcl"]
     eval [read $fd]
     close $fd
 }
@@ -102,6 +102,266 @@ critcl::ccode {
 	return fqn;
     }
 
+    enum PackerTypes {PACKTYPE_SHORT, PACKTYPE_INT, PACKTYPE_LONG, PACKTYPE_LONG_LONG,
+		      PACKTYPE_USHORT, PACKTYPE_UINT, PACKTYPE_ULONG, PACKTYPE_ULONG_LONG,
+		      PACKTYPE_FLOAT, PACKTYPE_DOUBLE,
+		      PACKTYPE_NIL, PACKTYPE_TRUE, PACKTYPE_FALSE, PACKTYPE_BOOL,
+		      PACKTYPE_ARRAY, PACKTYPE_MAP, PACKTYPE_LIST, PACKTYPE_DICT, PACKTYPE_TCLARRAY,
+		      PACKTYPE_RAW, PACKTYPE_RAW_BODY, PACKTYPE_STRING};
+
+    static int get_pack_type(Tcl_Interp* ip, Tcl_Obj* o, int* tindex)
+    {
+	static const char* pack_types[] = {"short", "int", "long", "long_long",
+					   "unsigned_short", "unsigned_int", "unsigned_long", "unsigned_long_long",
+					   "float", "double",
+					   "nil", "true", "false", "bool",
+					   "array", "map", "list", "dict", "tclarray",
+					   "raw", "raw_body", "string",
+					   NULL};
+	*tindex = -1;
+	if (Tcl_GetIndexFromObj(ip, o, pack_types, "type", 0, tindex) != TCL_OK)
+	    return TCL_ERROR;
+	return TCL_OK;
+    }
+
+    static int pack_typed_data(Tcl_Interp* ip, MsgpackPackerClientData* pcd, int tindex, Tcl_Obj* d, Tcl_Obj* e, Tcl_Obj* f)
+    {
+	switch((enum PackerTypes)tindex){
+	case PACKTYPE_SHORT:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected short", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_short(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_INT:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_int(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_LONG:
+	{
+	    long i = 0;
+	    if (Tcl_GetLongFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_long(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_LONG_LONG:
+	{
+	    long long i = 0;
+	    if (Tcl_GetWideIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_long_long(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_USHORT:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned short", -1));
+		return TCL_ERROR;
+		}
+	    msgpack_pack_unsigned_short(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_UINT:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_unsigned_int(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_ULONG:
+	{
+	    long i = 0;
+	    if (Tcl_GetLongFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_unsigned_long(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_ULONG_LONG:
+	{
+	    long long i = 0;
+	    if (Tcl_GetWideIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned long long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_unsigned_long_long(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FLOAT:
+	{
+	    double i = 0;
+	    if (Tcl_GetDoubleFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected float", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_float(pcd->pk, (float)i);
+	    break;
+	}
+	case PACKTYPE_DOUBLE:
+	{
+	    double i = 0;
+	    if (Tcl_GetDoubleFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected double", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_float(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_NIL:
+	{
+	    msgpack_pack_nil(pcd->pk);
+	    break;
+	}
+	case PACKTYPE_TRUE:
+	{
+	    msgpack_pack_true(pcd->pk);
+	    break;
+	}
+	case PACKTYPE_FALSE:
+	{
+	    msgpack_pack_false(pcd->pk);
+	    break;
+	}
+	case PACKTYPE_BOOL:
+	{
+	    int i = 0;
+	    if (Tcl_GetBooleanFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected boolean", -1));
+		return TCL_ERROR;
+	    }
+	    if (i)
+		msgpack_pack_true(pcd->pk);
+	    else
+		msgpack_pack_false(pcd->pk);
+	    break;
+	}
+	case PACKTYPE_ARRAY:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer array size", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_array(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_MAP:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer map size", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_map(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_LIST:
+	{
+	    int etindex = -1;
+	    int eobjc = 0;
+	    Tcl_Obj** eobjv = 0;
+	    if (get_pack_type(ip, d, &etindex) != TCL_OK)
+		return TCL_ERROR;
+	    if (Tcl_ListObjGetElements(ip, e, &eobjc, &eobjv) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected list", -1));
+		return TCL_ERROR;
+	    }
+	    if (eobjc) {
+		int i = 0;
+		msgpack_pack_array(pcd->pk, eobjc);
+		for(i = 0; i < eobjc; i++)
+		    if (pack_typed_data(ip, pcd, etindex, eobjv[i], 0, 0) != TCL_OK)
+			return TCL_ERROR;
+	    }
+	    break;
+	}
+	case PACKTYPE_DICT:
+	{
+	    int ktindex = -1;
+	    int vtindex = -1;
+	    int dsize = 0;
+	    Tcl_DictSearch ds;
+	    Tcl_Obj* keyp = 0;
+	    Tcl_Obj* valp = 0;
+	    int done = 0;
+	    if (get_pack_type(ip, d, &ktindex) != TCL_OK)
+		return TCL_ERROR;
+	    if (get_pack_type(ip, e, &vtindex) != TCL_OK)
+		return TCL_ERROR;
+	    if (Tcl_DictObjSize(ip, f, &dsize) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected dict", -1));
+		return TCL_ERROR;
+	    }
+	    if (dsize) {
+		if (Tcl_DictObjFirst(ip, f, &ds, &keyp, &valp, &done) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected dict", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_map(pcd->pk, dsize);
+		while(!done) {
+		    printf("%s %s\n", Tcl_GetStringFromObj(keyp, 0), Tcl_GetStringFromObj(valp, 0));
+		    if (pack_typed_data(ip, pcd, ktindex, keyp, 0, 0) != TCL_OK)
+			return TCL_ERROR;
+		    if (pack_typed_data(ip, pcd, vtindex, valp, 0, 0) != TCL_OK)
+			return TCL_ERROR;
+		    Tcl_DictObjNext(&ds, &keyp, &valp, &done);
+		}
+	    }
+	    break;
+	}
+	case PACKTYPE_TCLARRAY:
+	{
+	    break;
+	}
+	case PACKTYPE_RAW:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer raw size", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_raw(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_RAW_BODY:
+	{
+	    int i = 0;
+	    const char* p = Tcl_GetStringFromObj(d, &i);
+	    msgpack_pack_raw_body(pcd->pk, p, i);
+	    break;
+	}
+	case PACKTYPE_STRING:
+	{
+	    int i = 0;
+	    const char* p = Tcl_GetStringFromObj(d, &i);
+	    msgpack_pack_raw(pcd->pk, i);
+	    msgpack_pack_raw_body(pcd->pk, p, i);
+	    break;
+	}
+	}
+	return TCL_OK;
+    }
+
     int msgpack_packer_objcmd(ClientData cd, Tcl_Interp* ip, int objc, Tcl_Obj* const objv[]) {
 	MsgpackPackerClientData* pcd = (MsgpackPackerClientData*)cd;
 	static const char* methods[] = {"destroy", "get", "pack", NULL};
@@ -131,189 +391,81 @@ critcl::ccode {
 		Tcl_WrongNumArgs(ip, 2, objv, "");
 		return TCL_ERROR;
 	    }
-	    printf("Size = %d\n", pcd->sbuf->size);
 	    Tcl_SetObjResult(ip, Tcl_NewStringObj(pcd->sbuf->data, pcd->sbuf->size));
 	    break;
 	}
 	case PACKER_PACK:
 	{
-	    static const char* pack_types[] = {"short", "int", "long", "long_long",
-					       "unsigned_short", "unsigned_int", "unsigned_long", "unsigned_long_long",
-					       "float", "double",
-					       "nil", "true", "false",
-					       "array", "map",
-					       "raw", "raw_body",
-					       NULL};
-	    enum PackerTypes {PACKTYPE_SHORT, PACKTYPE_INT, PACKTYPE_LONG, PACKTYPE_LONG_LONG,
-			      PACKTYPE_USHORT, PACKTYPE_UINT, PACKTYPE_ULONG, PACKTYPE_ULONG_LONG,
-			      PACKTYPE_FLOAT, PACKTYPE_DOUBLE,
-			      PACKTYPE_NIL, PACKTYPE_TRUE, PACKTYPE_FALSE,
-			      PACKTYPE_ARRAY, PACKTYPE_MAP,
-			      PACKTYPE_RAW, PACKTYPE_RAW_BODY};
 	    int tindex = -1;
-	    if (objc != 4) {
-		Tcl_WrongNumArgs(ip, 2, objv, "type data");
-		return TCL_ERROR;
-	    }
-	    if (Tcl_GetIndexFromObj(ip, objv[2], pack_types, "type", 0, &tindex) != TCL_OK)
+	    if (get_pack_type(ip, objv[2], &tindex) != TCL_OK)
 		return TCL_ERROR;
 	    switch((enum PackerTypes)tindex){
 	    case PACKTYPE_SHORT:
-	    {
-		int i = 0;
-		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected short", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_short(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_INT:
-	    {
-		int i = 0;
-		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_int(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_LONG:
-	    {
-		long i = 0;
-		if (Tcl_GetLongFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_long(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_LONG_LONG:
-	    {
-		long long i = 0;
-		if (Tcl_GetWideIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long long", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_long_long(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_USHORT:
-	    {
-		int i = 0;
-		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned short", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_unsigned_short(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_UINT:
-	    {
-		int i = 0;
-		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned integer", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_unsigned_int(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_ULONG:
-	    {
-		long i = 0;
-		if (Tcl_GetLongFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned long", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_unsigned_long(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_ULONG_LONG:
-	    {
-		long long i = 0;
-		if (Tcl_GetWideIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned long long", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_unsigned_long_long(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_FLOAT:
-	    {
-		double i = 0;
-		if (Tcl_GetDoubleFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected float", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_float(pcd->pk, (float)i);
-		break;
-	    }
 	    case PACKTYPE_DOUBLE:
+	    case PACKTYPE_BOOL:
+	    case PACKTYPE_RAW_BODY:
 	    {
-		double i = 0;
-		if (Tcl_GetDoubleFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected double", -1));
+		if (objc != 4) {
+		    Tcl_WrongNumArgs(ip, 2, objv, "type data");
 		    return TCL_ERROR;
 		}
-		msgpack_pack_float(pcd->pk, i);
-		break;
-	    }
-	    case PACKTYPE_NIL:
-	    {
-		/* TBD: no need for data argument here */
-		msgpack_pack_nil(pcd->pk);
-		break;
-	    }
-	    case PACKTYPE_TRUE:
-	    {
-		/* TBD: no need for data argument here */
-		msgpack_pack_true(pcd->pk);
-		break;
-	    }
-	    case PACKTYPE_FALSE:
-	    {
-		/* TBD: no need for data argument here */
-		msgpack_pack_false(pcd->pk);
 		break;
 	    }
 	    case PACKTYPE_ARRAY:
-	    {
-		int i = 0;
-		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer array size", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_array(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_MAP:
-	    {
-		int i = 0;
-		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer map size", -1));
-		    return TCL_ERROR;
-		}
-		msgpack_pack_map(pcd->pk, i);
-		break;
-	    }
 	    case PACKTYPE_RAW:
 	    {
-		int i = 0;
-		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
-		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer raw size", -1));
+		if (objc != 4) {
+		    Tcl_WrongNumArgs(ip, 2, objv, "type size");
 		    return TCL_ERROR;
 		}
-		msgpack_pack_raw(pcd->pk, i);
 		break;
 	    }
-	    case PACKTYPE_RAW_BODY:
+	    case PACKTYPE_NIL:
+	    case PACKTYPE_TRUE:
+	    case PACKTYPE_FALSE:
 	    {
-		int i = 0;
-		const char* p = Tcl_GetStringFromObj(objv[3], &i);
-		msgpack_pack_raw_body(pcd->pk, p, i);
+		if (objc != 3) {
+		    Tcl_WrongNumArgs(ip, 2, objv, "type");
+		    return TCL_ERROR;
+		}
+		break;
+	    }
+	    case PACKTYPE_LIST:
+	    {
+		if (objc != 5) {
+		    Tcl_WrongNumArgs(ip, 2, objv, "list element_type data");
+		    return TCL_ERROR;
+		}
+		break;
+	    }
+	    case PACKTYPE_DICT:
+	    {
+		if (objc != 6) {
+		    Tcl_WrongNumArgs(ip, 2, objv, "list key_type value_type data");
+		    return TCL_ERROR;
+		}
+		break;
+	    }
+	    case PACKTYPE_TCLARRAY:
+	    {
+		if (objc != 6) {
+		    Tcl_WrongNumArgs(ip, 2, objv, "list key_type value_type array_name");
+		    return TCL_ERROR;
+		}
 		break;
 	    }
 	    }
+	    if (pack_typed_data(ip, pcd, tindex, objv[3], objc>3?objv[4]:0, objc>4?objv[5]:0) != TCL_OK)
+		return TCL_ERROR;
 	    break;
 	}
 	}
