@@ -1,0 +1,10 @@
+package require tcltest
+package require msgpack
+
+tcltest::test msgpack-version {msgpack version} -body {
+    string match "0.5.*" [msgpack version]
+} -returnCodes {ok} -result {1}
+
+# cleanup
+::tcltest::cleanupTests
+return

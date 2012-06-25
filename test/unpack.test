@@ -1,0 +1,31 @@
+package require tcltest
+package require msgpack
+
+tcltest::test msgpack-unpacker-1 {msgpack unpack} -body {
+    set u [msgpack unpacker]
+    string match "::msgpack*" $u
+} -cleanup {
+    $u destroy
+} -returnCodes {ok} -result {1}
+
+tcltest::test msgpack-unpacker-2 {msgpack unpack} -body {
+    msgpack unpacker test
+} -cleanup {
+    test destroy
+} -returnCodes {ok} -result {::test}
+
+tcltest::test msgpack-unpacker-3 {msgpack unpack} -body {
+    msgpack unpacker test test
+} -returnCodes {error} -result {wrong # args: should be "msgpack unpacker ?name?"}
+
+tcltest::test msgpack-unpacker-4 {msgpack unpack} -setup {
+    msgpack unpacker test
+} -body {
+    msgpack unpacker test
+} -cleanup {
+    test destroy
+} -returnCodes {error} -result {command "::test" already exists, unable to create object}
+
+# cleanup
+::tcltest::cleanupTests
+return
