@@ -1,0 +1,39 @@
+Intro
+=====
+
+msgpack is a wrapper for the MessagePack library (http://msgpack.org/). The
+wrapper is based on version 0.5.7 of the MessagePack library. It is written
+using critcl 3. You can find the wrapper code at GitHub:
+
+    https://github.com/jdc8/tclmsgpack
+
+License
+=======
+
+While MessagePack itself uses the Apache License version 2.0, this wrapper usus
+the BSD license. Check COPYING.BSD for more info.
+
+Building
+========
+
+Requirements:
+
+- MessagePack 0.5.7 from https://github.com/msgpack/msgpack
+
+- Tcl 8.5 or 8.6
+
+- Critcl 3
+
+To build the wrapper, run the build.tcl script. The script searches for critcl
+and zeromq installation or sources.  Type "tclsh build.tcl --help" for more
+information. On Linux, the package can be linked against MessagePack statically
+or dynamicallly. Default is dynamic. Use the -static option to choose static
+linking.
+
+Usage
+=====
+
+Loading
+-------
+
+    package require msgpack
