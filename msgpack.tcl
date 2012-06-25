@@ -52,6 +52,10 @@ critcl::ccode {
 	struct msgpack_packer* pk;
     } MsgpackPackerClientData;
 
+    typedef struct {
+	struct msgpack_sbuffer* sbuf;
+    } MsgpackUnpackerClientData;
+
     static void msgpack_free_client_data(void* p) { ckfree(p); }
 
     static Tcl_Obj* unique_namespace_name(Tcl_Interp* ip, Tcl_Obj* obj, MsgpackClientData* cd) {
@@ -316,7 +320,133 @@ critcl::ccode {
 	return TCL_OK;
     }
 
+    static Tcl_Obj* msgpack_unpack_object(Tcl_Interp* ip, msgpack_object o)
+    {
+	Tcl_Obj* i = Tcl_NewListObj(0, 0);
+	switch(o.type) {
+	case MSGPACK_OBJECT_NIL:
+	{
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("nil", -1));
+	    break;
+	}
+	case MSGPACK_OBJECT_BOOLEAN:
+	{
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("boolean", -1));
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewIntObj(o.via.boolean));
+	    break;
+	}
+	case MSGPACK_OBJECT_POSITIVE_INTEGER:
+	{
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("positive_integer", -1));
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewWideIntObj(o.via.u64));
+	    break;
+	}
+	case MSGPACK_OBJECT_NEGATIVE_INTEGER:
+	{
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("negative_integer", -1));
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewWideIntObj(o.via.i64));
+	    break;
+	}
+	case MSGPACK_OBJECT_DOUBLE:
+	{
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("double", -1));
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewDoubleObj(o.via.dec));
+	    break;
+	}
+	case MSGPACK_OBJECT_RAW:
+	{
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("raw", -1));
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj(o.via.raw.ptr, o.via.raw.size));
+	    break;
+	}
+	case MSGPACK_OBJECT_ARRAY:
+	{
+	    int t = 0;
+	    Tcl_Obj* a = Tcl_NewListObj(0, 0);
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("array", -1));
+	    for(t = 0; t < o.via.array.size; t++)
+		Tcl_ListObjAppendElement(ip, a, msgpack_unpack_object(ip, o.via.array.ptr[t]));
+	    Tcl_ListObjAppendElement(ip, i, a);
+	    break;
+	}
+	case MSGPACK_OBJECT_MAP:
+	{
+	    int t = 0;
+	    Tcl_Obj* d = Tcl_NewDictObj();
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("map", -1));
+	    for(t = 0; t < o.via.array.size; t++)
+		Tcl_DictObjPut(ip, d,
+			       msgpack_unpack_object(ip, o.via.map.ptr[t].key),
+			       msgpack_unpack_object(ip, o.via.map.ptr[t].val));
+	    Tcl_ListObjAppendElement(ip, i, d);
+	    break;
+	}
+	default:
+	{
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("unknown", -1));
+	    break;
+	}
+	}
+	return i;
+    }
+
     int msgpack_unpacker_objcmd(ClientData cd, Tcl_Interp* ip, int objc, Tcl_Obj* const objv[]) {
+	MsgpackUnpackerClientData* pcd = (MsgpackUnpackerClientData*)cd;
+	static const char* methods[] = {"destroy", "set", "unpack", NULL};
+	enum UnpackerMethods {UNPACKER_DESTROY, UNPACKER_SET, UNPACKER_UNPACK};
+	int index = -1;
+	if (objc < 2) {
+	    Tcl_WrongNumArgs(ip, 1, objv, "method ?argument ...?");
+	    return TCL_ERROR;
+	}
+	if (Tcl_GetIndexFromObj(ip, objv[1], methods, "method", 0, &index) != TCL_OK)
+            return TCL_ERROR;
+	switch((enum UnpackerMethods)index){
+	case UNPACKER_DESTROY:
+	{
+	    if (objc != 2) {
+		Tcl_WrongNumArgs(ip, 2, objv, "");
+		return TCL_ERROR;
+	    }
+	    if (pcd->sbuf)
+		msgpack_sbuffer_free(pcd->sbuf);
+	    Tcl_DeleteCommand(ip, Tcl_GetStringFromObj(objv[0], 0));
+	    break;
+	}
+	case UNPACKER_SET:
+	{
+	    const char* p = 0;
+	    int l = 0;
+	    if (objc != 3) {
+		Tcl_WrongNumArgs(ip, 2, objv, "packed_data");
+		return TCL_ERROR;
+	    }
+	    if (pcd->sbuf)
+		msgpack_sbuffer_free(pcd->sbuf);
+	    pcd->sbuf = msgpack_sbuffer_new();
+	    p = Tcl_GetStringFromObj(objv[2], &l);
+	    msgpack_sbuffer_write(pcd->sbuf, p, l);
+	    break;
+	}
+	case UNPACKER_UNPACK:
+	{
+	    size_t offset = 0;
+	    if (objc != 2) {
+		Tcl_WrongNumArgs(ip, 2, objv, "");
+		return TCL_ERROR;
+	    }
+	    if (pcd->sbuf) {
+		msgpack_unpacked msg;
+		msgpack_unpacked_init(&msg);
+		Tcl_Obj* r = Tcl_NewListObj(0, 0);
+		while(msgpack_unpack_next(&msg, pcd->sbuf->data, pcd->sbuf->size, &offset))
+		    Tcl_ListObjAppendElement(ip, r, msgpack_unpack_object(ip, msg.data));
+		msgpack_unpacked_destroy(&msg);
+		Tcl_SetObjResult(ip, r);
+	    }
+	    break;
+	}
+	}
 	return TCL_OK;
     }
 }
@@ -343,6 +473,22 @@ critcl::ccommand ::msgpack::packer {cd ip objc objv} -clientdata msgpackClientDa
 }
 
 critcl::ccommand ::msgpack::unpacker {cd ip objc objv} -clientdata msgpackClientData {
+    MsgpackUnpackerClientData* ccd = 0;
+    Tcl_Obj* fqn = 0;
+    if (objc == 2)
+	fqn = unique_namespace_name(ip, objv[1], (MsgpackClientData*)cd);
+    else if (objc == 1)
+	fqn = unique_namespace_name(ip, 0, (MsgpackClientData*)cd);
+    else {
+	Tcl_WrongNumArgs(ip, 1, objv, "?name?");
+	return TCL_ERROR;
+    }
+    if (!fqn)
+	return TCL_ERROR;
+    ccd = (MsgpackUnpackerClientData*)ckalloc(sizeof(MsgpackUnpackerClientData));
+    ccd->sbuf = 0;
+    Tcl_CreateObjCommand(ip, Tcl_GetStringFromObj(fqn, 0), msgpack_unpacker_objcmd, (ClientData)ccd, msgpack_free_client_data);
+    Tcl_SetObjResult(ip, fqn);
     return TCL_OK;
 }
 
