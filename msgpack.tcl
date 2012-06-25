@@ -40,15 +40,323 @@ critcl::tcl 8.5
 critcl::tsources msgpack_helper.tcl
 
 critcl::ccode {
+
 #include "msgpack.h"
+
+    typedef struct {
+	int id;
+    } MsgpackClientData;
+
+    typedef struct {
+	struct msgpack_sbuffer* sbuf;
+	struct msgpack_packer* pk;
+    } MsgpackPackerClientData;
+
+    static void msgpack_free_client_data(void* p) { ckfree(p); }
+
+    static Tcl_Obj* unique_namespace_name(Tcl_Interp* ip, Tcl_Obj* obj, MsgpackClientData* cd) {
+	Tcl_Obj* fqn = 0;
+	if (obj) {
+	    const char* name = Tcl_GetStringFromObj(obj, 0);
+	    Tcl_CmdInfo ci;
+	    if (!Tcl_StringMatch(name, "::*")) {
+		Tcl_Eval(ip, "namespace current");
+		fqn = Tcl_GetObjResult(ip);
+		fqn = Tcl_DuplicateObj(fqn);
+		Tcl_IncrRefCount(fqn);
+		if (!Tcl_StringMatch(Tcl_GetStringFromObj(fqn, 0), "::")) {
+		    Tcl_AppendToObj(fqn, "::", -1);
+		}
+		Tcl_AppendToObj(fqn, name, -1);
+	    } else {
+		fqn = Tcl_NewStringObj(name, -1);
+		Tcl_IncrRefCount(fqn);
+	    }
+	    if (Tcl_GetCommandInfo(ip, Tcl_GetStringFromObj(fqn, 0), &ci)) {
+		Tcl_Obj* err;
+		err = Tcl_NewObj();
+		Tcl_AppendToObj(err, "command \"", -1);
+		Tcl_AppendObjToObj(err, fqn);
+		Tcl_AppendToObj(err, "\" already exists, unable to create object", -1);
+		Tcl_DecrRefCount(fqn);
+		Tcl_SetObjResult(ip, err);
+		return 0;
+	    }
+	}
+	else {
+	    Tcl_Eval(ip, "namespace current");
+	    fqn = Tcl_GetObjResult(ip);
+	    fqn = Tcl_DuplicateObj(fqn);
+	    Tcl_IncrRefCount(fqn);
+	    if (!Tcl_StringMatch(Tcl_GetStringFromObj(fqn, 0), "::")) {
+		Tcl_AppendToObj(fqn, "::", -1);
+	    }
+	    Tcl_AppendToObj(fqn, "msgpack", -1);
+	    Tcl_AppendPrintfToObj(fqn, "%d", cd->id);
+	    cd->id = cd->id + 1;
+	}
+	return fqn;
+    }
+
+    int msgpack_packer_objcmd(ClientData cd, Tcl_Interp* ip, int objc, Tcl_Obj* const objv[]) {
+	MsgpackPackerClientData* pcd = (MsgpackPackerClientData*)cd;
+	static const char* methods[] = {"destroy", "get", "pack", NULL};
+	enum PackerMethods {PACKER_DESTROY, PACKER_GET, PACKER_PACK};
+	int index = -1;
+	if (objc < 2) {
+	    Tcl_WrongNumArgs(ip, 1, objv, "method ?argument ...?");
+	    return TCL_ERROR;
+	}
+	if (Tcl_GetIndexFromObj(ip, objv[1], methods, "method", 0, &index) != TCL_OK)
+            return TCL_ERROR;
+	switch((enum PackerMethods)index){
+	case PACKER_DESTROY:
+	{
+	    if (objc != 2) {
+		Tcl_WrongNumArgs(ip, 2, objv, "");
+		return TCL_ERROR;
+	    }
+	    msgpack_packer_free(pcd->pk);
+	    msgpack_sbuffer_free(pcd->sbuf);
+	    Tcl_DeleteCommand(ip, Tcl_GetStringFromObj(objv[0], 0));
+	    break;
+	}
+	case PACKER_GET:
+	{
+	    if (objc != 2) {
+		Tcl_WrongNumArgs(ip, 2, objv, "");
+		return TCL_ERROR;
+	    }
+	    printf("Size = %d\n", pcd->sbuf->size);
+	    Tcl_SetObjResult(ip, Tcl_NewStringObj(pcd->sbuf->data, pcd->sbuf->size));
+	    break;
+	}
+	case PACKER_PACK:
+	{
+	    static const char* pack_types[] = {"short", "int", "long", "long_long",
+					       "unsigned_short", "unsigned_int", "unsigned_long", "unsigned_long_long",
+					       "float", "double",
+					       "nil", "true", "false",
+					       "array", "map",
+					       "raw", "raw_body",
+					       NULL};
+	    enum PackerTypes {PACKTYPE_SHORT, PACKTYPE_INT, PACKTYPE_LONG, PACKTYPE_LONG_LONG,
+			      PACKTYPE_USHORT, PACKTYPE_UINT, PACKTYPE_ULONG, PACKTYPE_ULONG_LONG,
+			      PACKTYPE_FLOAT, PACKTYPE_DOUBLE,
+			      PACKTYPE_NIL, PACKTYPE_TRUE, PACKTYPE_FALSE,
+			      PACKTYPE_ARRAY, PACKTYPE_MAP,
+			      PACKTYPE_RAW, PACKTYPE_RAW_BODY};
+	    int tindex = -1;
+	    if (objc != 4) {
+		Tcl_WrongNumArgs(ip, 2, objv, "type data");
+		return TCL_ERROR;
+	    }
+	    if (Tcl_GetIndexFromObj(ip, objv[2], pack_types, "type", 0, &tindex) != TCL_OK)
+		return TCL_ERROR;
+	    switch((enum PackerTypes)tindex){
+	    case PACKTYPE_SHORT:
+	    {
+		int i = 0;
+		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected short", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_short(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_INT:
+	    {
+		int i = 0;
+		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_int(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_LONG:
+	    {
+		long i = 0;
+		if (Tcl_GetLongFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_long(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_LONG_LONG:
+	    {
+		long long i = 0;
+		if (Tcl_GetWideIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long long", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_long_long(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_USHORT:
+	    {
+		int i = 0;
+		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned short", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_unsigned_short(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_UINT:
+	    {
+		int i = 0;
+		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned integer", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_unsigned_int(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_ULONG:
+	    {
+		long i = 0;
+		if (Tcl_GetLongFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned long", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_unsigned_long(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_ULONG_LONG:
+	    {
+		long long i = 0;
+		if (Tcl_GetWideIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected unsigned long long", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_unsigned_long_long(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_FLOAT:
+	    {
+		double i = 0;
+		if (Tcl_GetDoubleFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected float", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_float(pcd->pk, (float)i);
+		break;
+	    }
+	    case PACKTYPE_DOUBLE:
+	    {
+		double i = 0;
+		if (Tcl_GetDoubleFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected double", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_float(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_NIL:
+	    {
+		/* TBD: no need for data argument here */
+		msgpack_pack_nil(pcd->pk);
+		break;
+	    }
+	    case PACKTYPE_TRUE:
+	    {
+		/* TBD: no need for data argument here */
+		msgpack_pack_true(pcd->pk);
+		break;
+	    }
+	    case PACKTYPE_FALSE:
+	    {
+		/* TBD: no need for data argument here */
+		msgpack_pack_false(pcd->pk);
+		break;
+	    }
+	    case PACKTYPE_ARRAY:
+	    {
+		int i = 0;
+		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer array size", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_array(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_MAP:
+	    {
+		int i = 0;
+		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer map size", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_map(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_RAW:
+	    {
+		int i = 0;
+		if (Tcl_GetIntFromObj(ip, objv[3], &i) != TCL_OK) {
+		    Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer raw size", -1));
+		    return TCL_ERROR;
+		}
+		msgpack_pack_raw(pcd->pk, i);
+		break;
+	    }
+	    case PACKTYPE_RAW_BODY:
+	    {
+		int i = 0;
+		const char* p = Tcl_GetStringFromObj(objv[3], &i);
+		msgpack_pack_raw_body(pcd->pk, p, i);
+		break;
+	    }
+	    }
+	    break;
+	}
+	}
+	return TCL_OK;
+    }
+
+    int msgpack_unpacker_objcmd(ClientData cd, Tcl_Interp* ip, int objc, Tcl_Obj* const objv[]) {
+	return TCL_OK;
+    }
 }
 
-critcl::ccommand ::msgpack::version {cd ip objc objv} {
+critcl::ccommand ::msgpack::packer {cd ip objc objv} -clientdata msgpackClientData {
+    MsgpackPackerClientData* ccd = 0;
+    Tcl_Obj* fqn = 0;
+    if (objc == 2)
+	fqn = unique_namespace_name(ip, objv[1], (MsgpackClientData*)cd);
+    else if (objc == 1)
+	fqn = unique_namespace_name(ip, 0, (MsgpackClientData*)cd);
+    else {
+	Tcl_WrongNumArgs(ip, 1, objv, "?name?");
+	return TCL_ERROR;
+    }
+    if (!fqn)
+	return TCL_ERROR;
+    ccd = (MsgpackPackerClientData*)ckalloc(sizeof(MsgpackPackerClientData));
+    ccd->sbuf = msgpack_sbuffer_new();
+    ccd->pk = msgpack_packer_new(ccd->sbuf, msgpack_sbuffer_write);
+    Tcl_CreateObjCommand(ip, Tcl_GetStringFromObj(fqn, 0), msgpack_packer_objcmd, (ClientData)ccd, msgpack_free_client_data);
+    Tcl_SetObjResult(ip, fqn);
+    return TCL_OK;
+}
+
+critcl::ccommand ::msgpack::unpacker {cd ip objc objv} -clientdata msgpackClientData {
+    return TCL_OK;
+}
+
+critcl::ccommand ::msgpack::version {cd ip objc objv} -clientdata msgpackClientData {
     Tcl_SetObjResult(ip, Tcl_NewStringObj(msgpack_version(), -1));
     return TCL_OK;
 }
 
-critcl::cinit {} {}
+critcl::cinit {
+    msgpackClientData = (MsgpackClientData*)ckalloc(sizeof(MsgpackClientData));
+    msgpackClientData->id = 0;
+} {
+    static MsgpackClientData* msgpackClientData = 0;
+}
 
-package provide msgpack 1.0
+package provide msgpack 0.5.0
 
