@@ -363,8 +363,8 @@ critcl::ccode {
 
     int msgpack_packer_objcmd(ClientData cd, Tcl_Interp* ip, int objc, Tcl_Obj* const objv[]) {
 	MsgpackPackerClientData* pcd = (MsgpackPackerClientData*)cd;
-	static const char* methods[] = {"data", "destroy", "pack", NULL};
-	enum PackerMethods {PACKER_DATA, PACKER_DESTROY, PACKER_PACK};
+	static const char* methods[] = {"data", "destroy", "pack", "reset", NULL};
+	enum PackerMethods {PACKER_DATA, PACKER_DESTROY, PACKER_PACK, PACKER_RESET};
 	int index = -1;
 	if (objc < 2) {
 	    Tcl_WrongNumArgs(ip, 1, objv, "method ?argument ...?");
@@ -465,6 +465,18 @@ critcl::ccode {
 	    }
 	    if (pack_typed_data(ip, pcd, tindex, objv[3], objc>3?objv[4]:0, objc>4?objv[5]:0) != TCL_OK)
 		return TCL_ERROR;
+	    break;
+	}
+	case PACKER_RESET:
+	{
+	    if (objc != 2) {
+		Tcl_WrongNumArgs(ip, 2, objv, "");
+		return TCL_ERROR;
+	    }
+	    msgpack_packer_free(pcd->pk);
+	    msgpack_sbuffer_free(pcd->sbuf);
+	    pcd->sbuf = msgpack_sbuffer_new();
+	    pcd->pk = msgpack_packer_new(pcd->sbuf, msgpack_sbuffer_write);
 	    break;
 	}
 	}
