@@ -319,7 +319,6 @@ critcl::ccode {
 		}
 		msgpack_pack_map(pcd->pk, dsize);
 		while(!done) {
-		    printf("%s %s\n", Tcl_GetStringFromObj(keyp, 0), Tcl_GetStringFromObj(valp, 0));
 		    if (pack_typed_data(ip, pcd, ktindex, keyp, 0, 0) != TCL_OK)
 			return TCL_ERROR;
 		    if (pack_typed_data(ip, pcd, vtindex, valp, 0, 0) != TCL_OK)
@@ -541,66 +540,6 @@ critcl::ccode {
 	}
 	return i;
     }
-
-    int msgpack_unpacker_objcmd(ClientData cd, Tcl_Interp* ip, int objc, Tcl_Obj* const objv[]) {
-	MsgpackUnpackerClientData* pcd = (MsgpackUnpackerClientData*)cd;
-	static const char* methods[] = {"destroy", "set", "unpack", NULL};
-	enum UnpackerMethods {UNPACKER_DESTROY, UNPACKER_SET, UNPACKER_UNPACK};
-	int index = -1;
-	if (objc < 2) {
-	    Tcl_WrongNumArgs(ip, 1, objv, "method ?argument ...?");
-	    return TCL_ERROR;
-	}
-	if (Tcl_GetIndexFromObj(ip, objv[1], methods, "method", 0, &index) != TCL_OK)
-            return TCL_ERROR;
-	switch((enum UnpackerMethods)index){
-	case UNPACKER_DESTROY:
-	{
-	    if (objc != 2) {
-		Tcl_WrongNumArgs(ip, 2, objv, "");
-		return TCL_ERROR;
-	    }
-	    if (pcd->sbuf)
-		msgpack_sbuffer_free(pcd->sbuf);
-	    Tcl_DeleteCommand(ip, Tcl_GetStringFromObj(objv[0], 0));
-	    break;
-	}
-	case UNPACKER_SET:
-	{
-	    const char* p = 0;
-	    int l = 0;
-	    if (objc != 3) {
-		Tcl_WrongNumArgs(ip, 2, objv, "packed_data");
-		return TCL_ERROR;
-	    }
-	    if (pcd->sbuf)
-		msgpack_sbuffer_free(pcd->sbuf);
-	    pcd->sbuf = msgpack_sbuffer_new();
-	    p = Tcl_GetStringFromObj(objv[2], &l);
-	    msgpack_sbuffer_write(pcd->sbuf, p, l);
-	    break;
-	}
-	case UNPACKER_UNPACK:
-	{
-	    size_t offset = 0;
-	    if (objc != 2) {
-		Tcl_WrongNumArgs(ip, 2, objv, "");
-		return TCL_ERROR;
-	    }
-	    if (pcd->sbuf) {
-		msgpack_unpacked msg;
-		msgpack_unpacked_init(&msg);
-		Tcl_Obj* r = Tcl_NewListObj(0, 0);
-		while(msgpack_unpack_next(&msg, pcd->sbuf->data, pcd->sbuf->size, &offset))
-		    Tcl_ListObjAppendElement(ip, r, msgpack_unpack_object(ip, msg.data));
-		msgpack_unpacked_destroy(&msg);
-		Tcl_SetObjResult(ip, r);
-	    }
-	    break;
-	}
-	}
-	return TCL_OK;
-    }
 }
 
 critcl::ccommand ::msgpack::packer {cd ip objc objv} -clientdata msgpackClientData {
@@ -624,23 +563,29 @@ critcl::ccommand ::msgpack::packer {cd ip objc objv} -clientdata msgpackClientDa
     return TCL_OK;
 }
 
-critcl::ccommand ::msgpack::unpacker {cd ip objc objv} -clientdata msgpackClientData {
+critcl::ccommand ::msgpack::unpack {cd ip objc objv} -clientdata msgpackClientData {
     MsgpackUnpackerClientData* ccd = 0;
     Tcl_Obj* fqn = 0;
-    if (objc == 2)
-	fqn = unique_namespace_name(ip, objv[1], (MsgpackClientData*)cd);
-    else if (objc == 1)
-	fqn = unique_namespace_name(ip, 0, (MsgpackClientData*)cd);
-    else {
-	Tcl_WrongNumArgs(ip, 1, objv, "?name?");
+    msgpack_sbuffer* sbuf = 0;
+    msgpack_unpacked msg;
+    char* p = 0;
+    int l = 0;
+    Tcl_Obj* r = 0;
+    size_t offset = 0;
+    if (objc != 2) {
+	Tcl_WrongNumArgs(ip, 1, objv, "data");
 	return TCL_ERROR;
     }
-    if (!fqn)
-	return TCL_ERROR;
-    ccd = (MsgpackUnpackerClientData*)ckalloc(sizeof(MsgpackUnpackerClientData));
-    ccd->sbuf = 0;
-    Tcl_CreateObjCommand(ip, Tcl_GetStringFromObj(fqn, 0), msgpack_unpacker_objcmd, (ClientData)ccd, msgpack_free_client_data);
-    Tcl_SetObjResult(ip, fqn);
+    sbuf = msgpack_sbuffer_new();
+    p = Tcl_GetStringFromObj(objv[1], &l);
+    msgpack_sbuffer_write(sbuf, p, l);
+    msgpack_unpacked_init(&msg);
+    r = Tcl_NewListObj(0, 0);
+    while(msgpack_unpack_next(&msg, sbuf->data, sbuf->size, &offset))
+	Tcl_ListObjAppendElement(ip, r, msgpack_unpack_object(ip, msg.data));
+    msgpack_unpacked_destroy(&msg);
+    msgpack_sbuffer_free(sbuf);
+    Tcl_SetObjResult(ip, r);
     return TCL_OK;
 }
 

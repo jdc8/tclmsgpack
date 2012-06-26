@@ -2,29 +2,27 @@ package require tcltest
 package require msgpack
 
 tcltest::test msgpack-unpacker-1 {msgpack unpack} -body {
-    set u [msgpack unpacker]
-    string match "::msgpack*" $u
-} -cleanup {
-    $u destroy
-} -returnCodes {ok} -result {1}
+    msgpack unpack
+} -returnCodes {error} -result {wrong # args: should be "msgpack unpack data"}
 
-tcltest::test msgpack-unpacker-2 {msgpack unpack} -body {
-    msgpack unpacker test
-} -cleanup {
-    test destroy
-} -returnCodes {ok} -result {::test}
+tcltest::test msgpack-unpacker-1 {msgpack unpack} -body {
+    msgpack unpack \1\3
+} -returnCodes {ok} -result {{positive_integer 1} {positive_integer 3}}
 
-tcltest::test msgpack-unpacker-3 {msgpack unpack} -body {
-    msgpack unpacker test test
-} -returnCodes {error} -result {wrong # args: should be "msgpack unpacker ?name?"}
-
-tcltest::test msgpack-unpacker-4 {msgpack unpack} -setup {
-    msgpack unpacker test
+tcltest::test msgpack-unpacker-1 {msgpack unpack} -setup {
+    msgpack packer p
+    p pack map 3
+    p pack int 1
+    p pack int 2
+    p pack int 3
+    p pack int 4
+    p pack int 5
+    p pack int 6
 } -body {
-    msgpack unpacker test
+    msgpack unpack [p get]
 } -cleanup {
-    test destroy
-} -returnCodes {error} -result {command "::test" already exists, unable to create object}
+    p destroy
+} -returnCodes {ok} -result {{map {{positive_integer 1} {positive_integer 2} {positive_integer 3} {positive_integer 4} {positive_integer 5} {positive_integer 6}}}}
 
 # cleanup
 ::tcltest::cleanupTests
