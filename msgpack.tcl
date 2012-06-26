@@ -411,6 +411,7 @@ critcl::ccode {
 	    case PACKTYPE_DOUBLE:
 	    case PACKTYPE_BOOL:
 	    case PACKTYPE_RAW_BODY:
+	    case PACKTYPE_STRING:
 	    {
 		if (objc != 4) {
 		    Tcl_WrongNumArgs(ip, 2, objv, "type data");
