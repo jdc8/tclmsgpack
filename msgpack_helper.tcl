@@ -22,6 +22,12 @@ namespace eval ::msgpack {
     }
 
     proc array2list {a} {
+	set l [list]
+	foreach i $a {
+	    lassign $i t v
+	    lappend l $v
+	}
+	return $l
     }
 }
 
