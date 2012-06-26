@@ -37,3 +37,73 @@ Loading
 -------
 
     package require msgpack
+
+Packing
+-------
+
+    msgpack packer ?<name>?
+
+        Create a packer and a packers object command with the specified name (or
+        msgpack<id> is no name is specified)
+
+        <name> data
+
+        <name> destroy
+
+        <name> pack <type>
+
+            Supported types are:
+
+	        nil
+	        true
+	        false
+
+        <name> pack <type> <data>
+
+            Supported types are:
+
+    	        unsigned_short
+	        unsigned_int
+	        unsigned_long
+	        unsigned_long_long
+	        unsigned_short
+	        unsigned_int
+	        unsigned_long
+	        unsigned_long_long
+	        float
+	        double
+	        boolean
+	        string
+		raw_body
+
+        <name> pack <type> <size>
+
+            Supported types are:
+
+	        array
+		map
+		raw
+
+        <name> pack list <element_type> <data>
+
+        <name> pack dict <key_type> <value_type> <data>
+
+        <name> pack tclarray <key_type> <value_type> <array_name>
+
+        <name> reset
+
+Unpacking
+---------
+
+    msgpack unpack <data>
+
+Utilities
+---------
+
+    msgpack version
+
+    msgpack map2dict <unpacked_map_data>
+
+    msgpack map2array <unpacked_map_data> <array_name>
+
+    msgpack array2list <unpacked_array_data>
