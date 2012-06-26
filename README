@@ -43,7 +43,7 @@ Packing
 
     msgpack packer ?<name>?
 
-        Create a packer and a packers object command with the specified name (or
+        Creates a packer and a packer object command with the specified name (or
         msgpack<id> is no name is specified)
 
         <name> data
