@@ -363,8 +363,8 @@ critcl::ccode {
 
     int msgpack_packer_objcmd(ClientData cd, Tcl_Interp* ip, int objc, Tcl_Obj* const objv[]) {
 	MsgpackPackerClientData* pcd = (MsgpackPackerClientData*)cd;
-	static const char* methods[] = {"destroy", "get", "pack", NULL};
-	enum PackerMethods {PACKER_DESTROY, PACKER_GET, PACKER_PACK};
+	static const char* methods[] = {"data", "destroy", "pack", NULL};
+	enum PackerMethods {PACKER_DATA, PACKER_DESTROY, PACKER_PACK};
 	int index = -1;
 	if (objc < 2) {
 	    Tcl_WrongNumArgs(ip, 1, objv, "method ?argument ...?");
@@ -373,6 +373,15 @@ critcl::ccode {
 	if (Tcl_GetIndexFromObj(ip, objv[1], methods, "method", 0, &index) != TCL_OK)
             return TCL_ERROR;
 	switch((enum PackerMethods)index){
+	case PACKER_DATA:
+	{
+	    if (objc != 2) {
+		Tcl_WrongNumArgs(ip, 2, objv, "");
+		return TCL_ERROR;
+	    }
+	    Tcl_SetObjResult(ip, Tcl_NewStringObj(pcd->sbuf->data, pcd->sbuf->size));
+	    break;
+	}
 	case PACKER_DESTROY:
 	{
 	    if (objc != 2) {
@@ -382,15 +391,6 @@ critcl::ccode {
 	    msgpack_packer_free(pcd->pk);
 	    msgpack_sbuffer_free(pcd->sbuf);
 	    Tcl_DeleteCommand(ip, Tcl_GetStringFromObj(objv[0], 0));
-	    break;
-	}
-	case PACKER_GET:
-	{
-	    if (objc != 2) {
-		Tcl_WrongNumArgs(ip, 2, objv, "");
-		return TCL_ERROR;
-	    }
-	    Tcl_SetObjResult(ip, Tcl_NewStringObj(pcd->sbuf->data, pcd->sbuf->size));
 	    break;
 	}
 	case PACKER_PACK:

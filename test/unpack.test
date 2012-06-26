@@ -19,7 +19,7 @@ tcltest::test msgpack-unpacker-1 {msgpack unpack} -setup {
     p pack int 5
     p pack int 6
 } -body {
-    msgpack unpack [p get]
+    msgpack unpack [p data]
 } -cleanup {
     p destroy
 } -returnCodes {ok} -result {{map {{positive_integer 1} {positive_integer 2} {positive_integer 3} {positive_integer 4} {positive_integer 5} {positive_integer 6}}}}
