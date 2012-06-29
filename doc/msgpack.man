@@ -1,0 +1,47 @@
+[comment {-*- tcl -*- doctools manpage}]
+[manpage_begin msgpack n 0.5.0]
+[copyright {Jos Decoster <jos.decoster@gmail.com>}]
+[moddesc {A Tcl wrapper for the MessagePack library}]
+[category  {Serialization}]
+[keywords {MessagePack}]
+[keywords {msgpack}]
+[keywords {serialization}]
+[titledesc {msgpack Package Reference}]
+[require Tcl 8.5]
+[require msgpack [opt 0.5.0]]
+[description]
+
+The [term msgpack] package is a wrapper for the MessagePack library. MessagePack
+can be found at [uri http://msgpack.org/].
+
+[para]
+
+The wrapper is based on version 0.5 of the MessagePack library. The package is
+written using [term critcl] 3.
+
+[para]
+
+Use this documentation in combination with the MessagePAck documentation for
+more details.
+
+[include packer.inc]
+[include unpacker.inc]
+[include utils.inc]
+
+[section "Bugs, ideas, feedback"]
+
+This document, and the package it describes, will undoubtedly contain
+bugs and other problems.
+
+Please report such at the [uri {https://github.com/jdc8/tclmsgpack/issues} {Github tracker}].
+
+Please also report any ideas for enhancements you may have for either
+package and/or documentation.
+
+[section "License"]
+
+The wrapper code is relased under the BSD license (specifically Modified BSD aka
+New BSD aka 3-clause BSD). Check COPYING.BSD for more info about the license
+used for this wrapper.
+
+[manpage_end]
