@@ -7,7 +7,7 @@ tcltest::test msgpack-unpacker-1 {msgpack unpack} -body {
 
 tcltest::test msgpack-unpacker-1 {msgpack unpack} -body {
     msgpack unpack \1\3
-} -returnCodes {ok} -result {{positive_integer 1} {positive_integer 3}}
+} -returnCodes {ok} -result {{integer 1} {integer 3}}
 
 tcltest::test msgpack-unpacker-1 {msgpack unpack} -setup {
     msgpack packer p
@@ -22,7 +22,7 @@ tcltest::test msgpack-unpacker-1 {msgpack unpack} -setup {
     msgpack unpack [p data]
 } -cleanup {
     p destroy
-} -returnCodes {ok} -result {{map {{positive_integer 1} {positive_integer 2} {positive_integer 3} {positive_integer 4} {positive_integer 5} {positive_integer 6}}}}
+} -returnCodes {ok} -result {{map {{integer 1} {integer 2} {integer 3} {integer 4} {integer 5} {integer 6}}}}
 
 # cleanup
 ::tcltest::cleanupTests

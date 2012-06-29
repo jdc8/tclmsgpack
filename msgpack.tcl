@@ -3,7 +3,7 @@ package require critcl 3
 namespace eval ::msgpack {
 }
 
-critcl::license {Jos Decoster} {Apache License V2.0 / BSD}
+critcl::license {Jos Decoster} {BSD}
 critcl::summary {Binary-based efficient object serialization library}
 critcl::description {
     msgpack is a Tcl binding for the MessagePack library (http://msgpack.org/),
@@ -501,13 +501,13 @@ critcl::ccode {
 	}
 	case MSGPACK_OBJECT_POSITIVE_INTEGER:
 	{
-	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("positive_integer", -1));
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("integer", -1));
 	    Tcl_ListObjAppendElement(ip, i, Tcl_NewWideIntObj(o.via.u64));
 	    break;
 	}
 	case MSGPACK_OBJECT_NEGATIVE_INTEGER:
 	{
-	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("negative_integer", -1));
+	    Tcl_ListObjAppendElement(ip, i, Tcl_NewStringObj("integer", -1));
 	    Tcl_ListObjAppendElement(ip, i, Tcl_NewWideIntObj(o.via.i64));
 	    break;
 	}

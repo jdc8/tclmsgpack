@@ -10,7 +10,7 @@ using critcl 3. You can find the wrapper code at GitHub:
 License
 =======
 
-While MessagePack itself uses the Apache License version 2.0, this wrapper usus
+While MessagePack itself uses the Apache License version 2.0, this wrapper uses
 the BSD license. Check COPYING.BSD for more info.
 
 Building
@@ -62,10 +62,10 @@ Packing
 
             Supported types are:
 
-    	        unsigned_short
-	        unsigned_int
-	        unsigned_long
-	        unsigned_long_long
+    	        short
+	        int
+	        long
+	        long_long
 	        unsigned_short
 	        unsigned_int
 	        unsigned_long
