@@ -1,7 +1,13 @@
 package require doctools
 
-set on [doctools::new on -format html]
-set f [open msgpack.html w]
+if {[llength $argv]} {
+    set format [lindex $argv 0]
+} else {
+    set format html
+}
+
+set on [doctools::new on -format $format]
+set f [open msgpack.$format w]
 puts $f [$on format {[include msgpack.man]}]
 close $f
 

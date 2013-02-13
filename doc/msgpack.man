@@ -11,8 +11,8 @@
 [require msgpack [opt 0.5.0]]
 [description]
 
-The [term msgpack] package is a wrapper for the MessagePack library. MessagePack
-can be found at [uri http://msgpack.org/].
+The [term msgpack] package is a wrapper for the MessagePack library. You can find the wrapper code at GitHub:
+[uri https://github.com/jdc8/tclmsgpack]. MessagePack can be found at [uri http://msgpack.org/].
 
 [para]
 
@@ -21,8 +21,24 @@ written using [term critcl] 3.
 
 [para]
 
-Use this documentation in combination with the MessagePAck documentation for
+Use this documentation in combination with the MessagePack documentation for
 more details.
+
+[section Building]
+
+Requirements:
+
+[list_begin options]
+[opt_def "MessagePack 0.5.7 from [uri https://github.com/msgpack/msgpack]"]
+[opt_def "Tcl 8.5 or 8.6"]
+[opt_def "Critcl 3"]
+[list_end]
+
+To build the wrapper, run the [term build.tcl] script. The script searches for
+Critcl and MessagePack installation or sources.  Type "tclsh build.tcl --help"
+for more information. On Linux, the package can be linked against MessagePack
+statically or dynamicallly. Default is dynamic. Use the -static option to choose
+static linking.
 
 [include packer.inc]
 [include unpacker.inc]
