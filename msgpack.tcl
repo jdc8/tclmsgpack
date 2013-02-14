@@ -53,10 +53,6 @@ critcl::ccode {
 	struct msgpack_packer* pk;
     } MsgpackPackerClientData;
 
-    typedef struct {
-	struct msgpack_sbuffer* sbuf;
-    } MsgpackUnpackerClientData;
-
     static void msgpack_free_client_data(void* p) { ckfree(p); }
 
     static Tcl_Obj* unique_namespace_name(Tcl_Interp* ip, Tcl_Obj* obj, MsgpackClientData* cd) {
