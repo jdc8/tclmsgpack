@@ -555,7 +555,7 @@ critcl::ccode {
     }
 }
 
-critcl::ccommand ::msgpack::packer {cd ip objc objv} -clientdata msgpackClientData {
+critcl::ccommand ::msgpack::packer {cd ip objc objv} {
     MsgpackPackerClientData* ccd = 0;
     Tcl_Obj* fqn = 0;
     if (objc == 2)
@@ -574,10 +574,9 @@ critcl::ccommand ::msgpack::packer {cd ip objc objv} -clientdata msgpackClientDa
     Tcl_CreateObjCommand(ip, Tcl_GetStringFromObj(fqn, 0), msgpack_packer_objcmd, (ClientData)ccd, msgpack_free_client_data);
     Tcl_SetObjResult(ip, fqn);
     return TCL_OK;
-}
+} -clientdata msgpackClientData
 
-critcl::ccommand ::msgpack::unpack {cd ip objc objv} -clientdata msgpackClientData {
-    MsgpackUnpackerClientData* ccd = 0;
+critcl::ccommand ::msgpack::unpack {cd ip objc objv} {
     Tcl_Obj* fqn = 0;
     msgpack_sbuffer* sbuf = 0;
     msgpack_unpacked msg;
@@ -600,12 +599,12 @@ critcl::ccommand ::msgpack::unpack {cd ip objc objv} -clientdata msgpackClientDa
     msgpack_sbuffer_free(sbuf);
     Tcl_SetObjResult(ip, r);
     return TCL_OK;
-}
+} -clientdata msgpackClientData
 
-critcl::ccommand ::msgpack::version {cd ip objc objv} -clientdata msgpackClientData {
+critcl::ccommand ::msgpack::version {cd ip objc objv} {
     Tcl_SetObjResult(ip, Tcl_NewStringObj(msgpack_version(), -1));
     return TCL_OK;
-}
+} -clientdata msgpackClientData
 
 critcl::cinit {
     msgpackClientData = (MsgpackClientData*)ckalloc(sizeof(MsgpackClientData));
