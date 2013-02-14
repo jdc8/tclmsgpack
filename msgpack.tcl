@@ -48,6 +48,7 @@ critcl::ccode {
     } MsgpackClientData;
 
     typedef struct {
+	Tcl_Obj* tcl_cmd;
 	struct msgpack_sbuffer* sbuf;
 	struct msgpack_packer* pk;
     } MsgpackPackerClientData;
@@ -390,6 +391,7 @@ critcl::ccode {
 	    }
 	    msgpack_packer_free(pcd->pk);
 	    msgpack_sbuffer_free(pcd->sbuf);
+	    Tcl_DecrRefCount(pcd->tcl_cmd);
 	    Tcl_DeleteCommand(ip, Tcl_GetStringFromObj(objv[0], 0));
 	    break;
 	}
@@ -569,6 +571,7 @@ critcl::ccommand ::msgpack::packer {cd ip objc objv} {
     if (!fqn)
 	return TCL_ERROR;
     ccd = (MsgpackPackerClientData*)ckalloc(sizeof(MsgpackPackerClientData));
+    ccd->tcl_cmd = fqn;
     ccd->sbuf = msgpack_sbuffer_new();
     ccd->pk = msgpack_packer_new(ccd->sbuf, msgpack_sbuffer_write);
     Tcl_CreateObjCommand(ip, Tcl_GetStringFromObj(fqn, 0), msgpack_packer_objcmd, (ClientData)ccd, msgpack_free_client_data);
