@@ -389,7 +389,7 @@ critcl::ccode {
 		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected double", -1));
 		return TCL_ERROR;
 	    }
-	    msgpack_pack_float(pcd->pk, i);
+	    msgpack_pack_double(pcd->pk, i);
 	    break;
 	}
 	case PACKTYPE_NIL:
