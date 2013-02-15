@@ -544,7 +544,7 @@ critcl::ccode {
 		Tcl_WrongNumArgs(ip, 2, objv, "");
 		return TCL_ERROR;
 	    }
-	    Tcl_SetObjResult(ip, Tcl_NewStringObj(pcd->sbuf->data, pcd->sbuf->size));
+	    Tcl_SetObjResult(ip, Tcl_NewByteArrayObj(pcd->sbuf->data, pcd->sbuf->size));
 	    break;
 	}
 	case PACKER_DESTROY:
@@ -756,7 +756,7 @@ critcl::ccommand ::msgpack::unpack {cd ip objc objv} {
 	return TCL_ERROR;
     }
     sbuf = msgpack_sbuffer_new();
-    p = Tcl_GetStringFromObj(objv[1], &l);
+    p = Tcl_GetByteArrayFromObj(objv[1], &l);
     msgpack_sbuffer_write(sbuf, p, l);
     msgpack_unpacked_init(&msg);
     r = Tcl_NewListObj(0, 0);
