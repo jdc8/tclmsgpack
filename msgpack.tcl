@@ -101,6 +101,10 @@ critcl::ccode {
 
     enum PackerTypes {PACKTYPE_SHORT, PACKTYPE_INT, PACKTYPE_LONG, PACKTYPE_LONG_LONG,
 		      PACKTYPE_USHORT, PACKTYPE_UINT, PACKTYPE_ULONG, PACKTYPE_ULONG_LONG,
+		      PACKTYPE_INT8, PACKTYPE_INT16, PACKTYPE_INT32, PACKTYPE_INT64,
+		      PACKTYPE_UINT8, PACKTYPE_UINT16, PACKTYPE_UINT32, PACKTYPE_UINT64,
+		      PACKTYPE_FIX_INT8, PACKTYPE_FIX_INT16, PACKTYPE_FIX_INT32, PACKTYPE_FIX_INT64,
+		      PACKTYPE_FIX_UINT8, PACKTYPE_FIX_UINT16, PACKTYPE_FIX_UINT32, PACKTYPE_FIX_UINT64,
 		      PACKTYPE_FLOAT, PACKTYPE_DOUBLE,
 		      PACKTYPE_NIL, PACKTYPE_TRUE, PACKTYPE_FALSE, PACKTYPE_BOOL,
 		      PACKTYPE_ARRAY, PACKTYPE_MAP, PACKTYPE_LIST, PACKTYPE_DICT, PACKTYPE_TCLARRAY,
@@ -110,6 +114,10 @@ critcl::ccode {
     {
 	static const char* pack_types[] = {"short", "int", "long", "long_long",
 					   "unsigned_short", "unsigned_int", "unsigned_long", "unsigned_long_long",
+					   "int8", "int16", "int32", "int64",
+					   "uint8", "uint16", "uint32", "uint64",
+					   "fix_int8", "fix_int16", "fix_int32", "fix_int64",
+					   "fix_uint8", "fix_uint16", "fix_uint32", "fix_uint64",
 					   "float", "double",
 					   "nil", "true", "false", "bool",
 					   "array", "map", "list", "dict", "tclarray",
@@ -202,6 +210,166 @@ critcl::ccode {
 		return TCL_ERROR;
 	    }
 	    msgpack_pack_unsigned_long_long(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_INT8:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_int8(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_INT16:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_int16(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_INT32:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_int32(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_INT64:
+	{
+	    long long i = 0;
+	    if (Tcl_GetWideIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_int64(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_INT8:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_int8(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_INT16:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_int16(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_INT32:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_int32(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_INT64:
+	{
+	    long long i = 0;
+	    if (Tcl_GetWideIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_int64(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_UINT8:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_uint8(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_UINT16:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_uint16(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_UINT32:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_uint32(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_UINT64:
+	{
+	    long long i = 0;
+	    if (Tcl_GetWideIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_uint64(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_UINT8:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_uint8(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_UINT16:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_uint16(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_UINT32:
+	{
+	    int i = 0;
+	    if (Tcl_GetIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected integer", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_uint32(pcd->pk, i);
+	    break;
+	}
+	case PACKTYPE_FIX_UINT64:
+	{
+	    long long i = 0;
+	    if (Tcl_GetWideIntFromObj(ip, d, &i) != TCL_OK) {
+		Tcl_SetObjResult(ip, Tcl_NewStringObj("Wrong value type, expected long long", -1));
+		return TCL_ERROR;
+	    }
+	    msgpack_pack_fix_uint64(pcd->pk, i);
 	    break;
 	}
 	case PACKTYPE_FLOAT:
