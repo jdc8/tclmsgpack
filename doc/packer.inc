@@ -52,13 +52,61 @@ Add a double to the packed data.
 
 Add a boolean with value [cmd false] to the packed data.
 
+[call [cmd {packerName}] [method pack] [method fix_int8] [arg data]]
+
+Add an 8 bit integer to the packed data.
+
+[call [cmd {packerName}] [method pack] [method fix_int16] [arg data]]
+
+Add a 16 bit integer to the packed data.
+
+[call [cmd {packerName}] [method pack] [method fix_int32] [arg data]]
+
+Add a 32 bit integer to the packed data.
+
+[call [cmd {packerName}] [method pack] [method fix_int64] [arg data]]
+
+Add a 64 bit integer to the packed data.
+
+[call [cmd {packerName}] [method pack] [method fix_uint8] [arg data]]
+
+Add an 8 bit unsigned integer to the packed data.
+
+[call [cmd {packerName}] [method pack] [method fix_uint16] [arg data]]
+
+Add a 16 bit unsigned integer to the packed data.
+
+[call [cmd {packerName}] [method pack] [method fix_uint32] [arg data]]
+
+Add a 32 bit unsigned integer to the packed data.
+
+[call [cmd {packerName}] [method pack] [method fix_uint64] [arg data]]
+
+Add a 64 bit unsigned integer to the packed data.
+
 [call [cmd {packerName}] [method pack] [method float] [arg data]]
 
 Add a float to the packed data.
 
 [call [cmd {packerName}] [method pack] [method int] [arg data]]
 
-Add an integer to the packed data.
+Add an integer to the packed data, let the packer choose the best packing.
+
+[call [cmd {packerName}] [method pack] [method int8] [arg data]]
+
+Add an 8 bit integer to the packed data, let the packer choose the best packing.
+
+[call [cmd {packerName}] [method pack] [method int16] [arg data]]
+
+Add a 16 bit integer to the packed data, let the packer choose the best packing.
+
+[call [cmd {packerName}] [method pack] [method int32] [arg data]]
+
+Add a 32 bit integer to the packed data, let the packer choose the best packing.
+
+[call [cmd {packerName}] [method pack] [method int64] [arg data]]
+
+Add a 64 bit integer to the packed data, let the packer choose the best packing.
 
 [call [cmd {packerName}] [method pack] [method list] [arg elemenType] [arg data]]
 
@@ -111,6 +159,22 @@ for each key/value pair in the array.
 [call [cmd {packerName}] [method pack] [method true]]
 
 Add a boolean with value [cmd true] to the packed data.
+
+[call [cmd {packerName}] [method pack] [method uint8] [arg data]]
+
+Add an 8 bit unsigned integer to the packed data, let the packer choose the best packing.
+
+[call [cmd {packerName}] [method pack] [method uint16] [arg data]]
+
+Add a 16 bit unsigned integer to the packed data, let the packer choose the best packing.
+
+[call [cmd {packerName}] [method pack] [method uint32] [arg data]]
+
+Add a 32 bit unsigned integer to the packed data, let the packer choose the best packing.
+
+[call [cmd {packerName}] [method pack] [method uint64] [arg data]]
+
+Add a 64 bit unsigned integer to the packed data, let the packer choose the best packing.
 
 [call [cmd {packerName}] [method pack] [method unsigned_int] [arg data]]
 

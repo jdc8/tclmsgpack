@@ -22,8 +22,20 @@ packerName pack boolean data
 packerName pack dict keyType valueType data
 packerName pack double data
 packerName pack false
+packerName pack fix_int8 data
+packerName pack fix_int16 data
+packerName pack fix_int32 data
+packerName pack fix_int64 data
+packerName pack fix_uint8 data
+packerName pack fix_uint16 data
+packerName pack fix_uint32 data
+packerName pack fix_uint64 data
 packerName pack float data
 packerName pack int data
+packerName pack int8 data
+packerName pack int16 data
+packerName pack int32 data
+packerName pack int64 data
 packerName pack list elemenType data
 packerName pack long data
 packerName pack long_long data
@@ -35,6 +47,10 @@ packerName pack short data
 packerName pack string data
 packerName pack tclarray keyType valueType arrayName
 packerName pack true
+packerName pack uint8 data
+packerName pack uint16 data
+packerName pack uint32 data
+packerName pack uint64 data
 packerName pack unsigned_int data
 packerName pack unsigned_long data
 packerName pack unsigned_long_long data
@@ -127,13 +143,66 @@ Packer OBJECT METHODS
 
         Add a boolean with value false to the packed data.
 
+    packerName pack fix_int8 data
+
+        Add an 8 bit integer to the packed data.
+
+    packerName pack fix_int16 data
+
+        Add a 16 bit integer to the packed data.
+
+    packerName pack fix_int32 data
+
+        Add a 32 bit integer to the packed data.
+
+    packerName pack fix_int64 data
+
+        Add a 64 bit integer to the packed data.
+
+    packerName pack fix_uint8 data
+
+        Add an 8 bit unsigned integer to the packed data.
+
+    packerName pack fix_uint16 data
+
+        Add a 16 bit unsigned integer to the packed data.
+
+    packerName pack fix_uint32 data
+
+        Add a 32 bit unsigned integer to the packed data.
+
+    packerName pack fix_uint64 data
+
+        Add a 64 bit unsigned integer to the packed data.
+
     packerName pack float data
 
         Add a float to the packed data.
 
     packerName pack int data
 
-        Add an integer to the packed data.
+        Add an integer to the packed data, let the packer choose the best
+        packing.
+
+    packerName pack int8 data
+
+        Add an 8 bit integer to the packed data, let the packer choose the best
+        packing.
+
+    packerName pack int16 data
+
+        Add a 16 bit integer to the packed data, let the packer choose the best
+        packing.
+
+    packerName pack int32 data
+
+        Add a 32 bit integer to the packed data, let the packer choose the best
+        packing.
+
+    packerName pack int64 data
+
+        Add a 64 bit integer to the packed data, let the packer choose the best
+        packing.
 
     packerName pack list elemenType data
 
@@ -187,6 +256,26 @@ Packer OBJECT METHODS
     packerName pack true
 
         Add a boolean with value true to the packed data.
+
+    packerName pack uint8 data
+
+        Add an 8 bit unsigned integer to the packed data, let the packer choose
+        the best packing.
+
+    packerName pack uint16 data
+
+        Add a 16 bit unsigned integer to the packed data, let the packer choose
+        the best packing.
+
+    packerName pack uint32 data
+
+        Add a 32 bit unsigned integer to the packed data, let the packer choose
+        the best packing.
+
+    packerName pack uint64 data
+
+        Add a 64 bit unsigned integer to the packed data, let the packer choose
+        the best packing.
 
     packerName pack unsigned_int data
 
